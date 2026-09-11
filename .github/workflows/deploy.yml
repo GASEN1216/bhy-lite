@@ -3,26 +3,20 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
-  # 允许在 Actions 面板手动触发
   workflow_dispatch:
 
-# GitHub Pages 部署所需的最小权限
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# 同一时间只允许一次部署，新的 push 会取消进行中的旧部署
 concurrency:
   group: pages
   cancel-in-progress: true
 
-# 所有 action 都用最新大版本（旧大版本目标 Node 20，在 Node 24 runner 上会失败）
+# 不使用 pnpm/action-setup：该 action 在当前 runner 上仍会触发 Node 20 弃用/失败。
+# CI 直接使用 npm，package.json 是依赖的唯一声明，避免 pnpm 安装阶段失败。
 jobs:
-  # ------------------------------------------------------------------
-  # 质量检查：独立 job，失败不阻塞部署
-  # （便于区分「代码问题」和「运行环境问题」）
-  # ------------------------------------------------------------------
   test:
     runs-on: ubuntu-latest
     steps:
@@ -34,32 +28,25 @@ jobs:
         with:
           node-version: 22
 
-      # 不用 pnpm/action-setup（目标 Node 20，在 Node 24 runner 上会失败）
-      - name: Install pnpm
-        run: npm install -g pnpm@12.3.4
-
       - name: Versions
         run: |
           node --version
-          pnpm --version
+          npm --version
 
+      # 不用 npm ci：仓库刻意只提交 pnpm-lock.yaml，不引入第二份 lockfile。
+      # npm install 会按 package.json 安装 devDependencies，并执行 esbuild postinstall。
       - name: Install dependencies
-        run: |
-          pnpm install --frozen-lockfile --config.dangerously-allow-all-builds=true ||
-          pnpm install --frozen-lockfile
+        run: npm install --no-audit --no-fund
 
       - name: Typecheck
-        run: pnpm typecheck
+        run: npm run typecheck
 
       - name: Test
-        run: pnpm test
+        run: npm test -- --run
 
       - name: Verify levels
-        run: pnpm verify:levels
+        run: npm run verify:levels
 
-  # ------------------------------------------------------------------
-  # 构建产物
-  # ------------------------------------------------------------------
   build:
     runs-on: ubuntu-latest
     steps:
@@ -71,25 +58,16 @@ jobs:
         with:
           node-version: 22
 
-      # 不用 pnpm/action-setup（目标 Node 20，在 Node 24 runner 上会失败）
-      - name: Install pnpm
-        run: npm install -g pnpm@12.3.4
-
       - name: Versions
         run: |
           node --version
-          pnpm --version
+          npm --version
 
-      # pnpm 10+ 默认禁止依赖执行构建脚本，而 esbuild 需要 postinstall 落地平台二进制。
-      # 主路径用 CLI 参数放行；万一该 pnpm 版本不认这个参数，回退到
-      # pnpm-workspace.yaml 里已经声明的 allowBuilds。
       - name: Install dependencies
-        run: |
-          pnpm install --frozen-lockfile --config.dangerously-allow-all-builds=true ||
-          pnpm install --frozen-lockfile
+        run: npm install --no-audit --no-fund
 
       - name: Build
-        run: pnpm build
+        run: npm run build
         env:
           # vite.config.ts 会读取 GITHUB_REPOSITORY 自动推导 base = /<repo>/
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -102,9 +80,6 @@ jobs:
         with:
           path: dist
 
-  # ------------------------------------------------------------------
-  # 发布
-  # ------------------------------------------------------------------
   deploy:
     needs: build
     runs-on: ubuntu-latest
