@@ -194,6 +194,16 @@ async function bootstrap(): Promise<void> {
   ui.showLevels(LEVELS, loadSave().levels as Record<number, { unlocked: number; stars: number; bestTime: number; completed: number }>);
   ui.showMenu();
 
+  // 直接跳关：?play=N 进第 N 关（绕过菜单，便于分享链接和自动化截图）
+  const playParam = new URLSearchParams(location.search).get('play');
+  if (playParam) {
+    const id = Number(playParam);
+    if (Number.isFinite(id) && id >= 1 && id <= LEVELS.length) {
+      ui.showMenu();
+      setTimeout(() => startLevel(id), 0);
+    }
+  }
+
   // 暴露给 dev console
   (window as unknown as { __bhy__: unknown }).__bhy__ = { game: () => game, status: () => status, startLevel, save: loadSave() };
 }
