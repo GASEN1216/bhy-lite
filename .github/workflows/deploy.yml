@@ -18,29 +18,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  # ------------------------------------------------------------------
+  # 质量检查：独立 job，失败不阻塞部署
+  # （便于区分「代码问题」和「运行环境问题」，失败归属一目了然）
+  # ------------------------------------------------------------------
+  test:
     runs-on: ubuntu-latest
     steps:
-      # 全部使用最新大版本：旧版（checkout@v4 / setup-node@v4 / upload-pages-artifact@v3）
-      # 目标 Node 20，在新 runner 上会被强制跑在 Node 24 并可能直接失败。
       - name: Checkout
         uses: actions/checkout@v5
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          # 锁死与本地一致的版本，避免 minor 差异导致 --frozen-lockfile 行为不同
-          version: 12.3.4
 
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: pnpm
 
-      # pnpm 10+ 默认禁止依赖执行构建脚本，而 esbuild 需要 postinstall 落地平台二进制。
-      # 主路径用 CLI 参数放行；万一该 pnpm 版本不认这个参数，回退到 pnpm-workspace.yaml
-      # 里已经声明的 allowBuilds。
+      # 不用 pnpm/action-setup：该 action 目标 Node 20，在 Node 24 runner 上可能直接失败
+      - name: Install pnpm
+        run: npm install -g pnpm@12.3.4
+
+      - name: Versions
+        run: |
+          node --version
+          pnpm --version
+
       - name: Install dependencies
         run: |
           pnpm install --frozen-lockfile --config.dangerously-allow-all-builds=true ||
@@ -51,6 +52,40 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      - name: Verify levels
+        run: pnpm verify:levels
+
+  # ------------------------------------------------------------------
+  # 构建产物
+  # ------------------------------------------------------------------
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      # 不用 pnpm/action-setup：该 action 目标 Node 20，在 Node 24 runner 上可能直接失败
+      - name: Install pnpm
+        run: npm install -g pnpm@12.3.4
+
+      - name: Versions
+        run: |
+          node --version
+          pnpm --version
+
+      # pnpm 10+ 默认禁止依赖执行构建脚本，而 esbuild 需要 postinstall 落地平台二进制。
+      # 主路径用 CLI 参数放行；万一该 pnpm 版本不认这个参数，回退到
+      # pnpm-workspace.yaml 里已经声明的 allowBuilds。
+      - name: Install dependencies
+        run: |
+          pnpm install --frozen-lockfile --config.dangerously-allow-all-builds=true ||
+          pnpm install --frozen-lockfile
 
       - name: Build
         run: pnpm build
@@ -66,6 +101,9 @@ jobs:
         with:
           path: dist
 
+  # ------------------------------------------------------------------
+  # 发布
+  # ------------------------------------------------------------------
   deploy:
     needs: build
     runs-on: ubuntu-latest
