@@ -1,0 +1,29 @@
+{
+  "name": "bhy-lite",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A 2D co-op puzzle platformer inspired by Fireboy & Watergirl. Pure TypeScript + Canvas, runs on GitHub Pages.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "gen:assets": "node scripts/gen-assets.mjs",
+    "verify:levels": "tsx scripts/verify-levels.ts",
+    "prebuild": "node scripts/gen-assets.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10",
+    "vitest": "^2.1.4"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

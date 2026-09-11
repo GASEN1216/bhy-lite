@@ -1,0 +1,47 @@
+# 依赖
+node_modules/
+.pnpm-store/
+.pnpm-debug.log*
+npm-debug.log*
+yarn-error.log*
+
+# 构建产物
+dist/
+dist-ssr/
+build/
+*.local
+
+# Vite / 缓存
+.vite/
+.cache/
+.eslintcache
+
+# 编辑器 / 系统
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# TypeScript
+*.tsbuildinfo
+
+# 测试报告
+coverage/
+
+# 环境变量
+.env
+.env.*
+!.env.example
+
+# 日志
+logs/
+*.log
+
+# Vite 临时文件（加载 vite.config.ts 时产生）
+vite.config.ts.timestamp-*
+
+
+# Vite 临时文件
+vite.config.ts.timestamp-*

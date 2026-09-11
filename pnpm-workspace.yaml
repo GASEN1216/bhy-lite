@@ -1,0 +1,10 @@
+# pnpm 12 会把「允许哪些依赖执行构建脚本」等设置记录在这个文件里。
+# esbuild 需要 postinstall 来落地平台二进制，因此显式允许。
+# 也可以直接用命令行：pnpm install --config.dangerously-allow-all-builds=true（见 README）
+
+# 使用 npm 风格的扁平 node_modules（不建软链接），
+# 避免 Windows 未开启「开发者模式」时 pnpm 建软链接失败（os error 2）。
+nodeLinker: hoisted
+
+allowBuilds:
+  esbuild: true

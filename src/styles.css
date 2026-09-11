@@ -1,0 +1,52 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0b1020;
+  font-family: 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 30%, #1e293b 0%, #0b1020 70%);
+}
+
+#game-canvas {
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  border-radius: 8px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.7);
+  background: #0b1020;
+}
+
+#ui-root {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* 只有实际显示的浮层 / HUD 接收鼠标事件；死亡遮罩由它自己的 .show 控制 */
+#ui-root .overlay,
+#ui-root .hud {
+  pointer-events: auto;
+}
+
+noscript {
+  color: #f8fafc;
+  display: block;
+  padding: 24px;
+}

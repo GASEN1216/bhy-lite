@@ -1,0 +1,65 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # 允许在 Actions 面板手动触发
+  workflow_dispatch:
+
+# GitHub Pages 部署所需的最小权限
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一时间只允许一次部署，新的 push 会取消进行中的旧部署
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      # dangerously-allow-all-builds：允许 esbuild 执行 postinstall 落地平台二进制
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --config.dangerously-allow-all-builds=true
+
+      - name: Typecheck & build
+        run: pnpm build
+        env:
+          # vite.config.ts 会读取 GITHUB_REPOSITORY 自动推导 base = /<repo>/
+          GITHUB_REPOSITORY: ${{ github.repository }}
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
