@@ -21,25 +21,38 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # 全部使用最新大版本：旧版（checkout@v4 / setup-node@v4 / upload-pages-artifact@v3）
+      # 目标 Node 20，在新 runner 上会被强制跑在 Node 24 并可能直接失败。
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 12
+          # 锁死与本地一致的版本，避免 minor 差异导致 --frozen-lockfile 行为不同
+          version: 12.3.4
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
-      # dangerously-allow-all-builds：允许 esbuild 执行 postinstall 落地平台二进制
+      # pnpm 10+ 默认禁止依赖执行构建脚本，而 esbuild 需要 postinstall 落地平台二进制。
+      # 主路径用 CLI 参数放行；万一该 pnpm 版本不认这个参数，回退到 pnpm-workspace.yaml
+      # 里已经声明的 allowBuilds。
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile --config.dangerously-allow-all-builds=true
+        run: |
+          pnpm install --frozen-lockfile --config.dangerously-allow-all-builds=true ||
+          pnpm install --frozen-lockfile
 
-      - name: Typecheck & build
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
         run: pnpm build
         env:
           # vite.config.ts 会读取 GITHUB_REPOSITORY 自动推导 base = /<repo>/
@@ -49,7 +62,7 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: dist
 
